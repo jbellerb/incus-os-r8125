@@ -1,0 +1,3 @@
+Package: r8125-dkms
+Pin: release o=Debian,c=non-free
+Pin-Priority: 500
