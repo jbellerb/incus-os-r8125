@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/lxc/incus/v6/shared/subprocess"
@@ -23,6 +24,9 @@ import (
 	"github.com/lxc/incus-os/incus-osd/internal/util"
 )
 
+// LXCProdFingerprints is used to verify Secure Boot keys.
+var LXCProdFingerprints = "secureboot-2025-R1=65fdb45e95aba8c36d58f90610f49eeebc0dd451,secureboot-2026-R1=6cdc880c5df31b18176ddaa3528394aa03791f91"
+
 // Enabled checks if Secure Boot is currently enabled.
 func Enabled() (bool, error) {
 	state, err := readEFIVariable("SecureBoot")
@@ -31,6 +35,21 @@ func Enabled() (bool, error) {
 	}
 
 	return state[0] == 1, nil
+}
+
+// ProductionKey returns the name of the known Secure Boot key with a given
+// fingerprint.
+func ProductionKey(fingerprint string) (string, bool) {
+	for _, key := range strings.Split(LXCProdFingerprints, ",") {
+		if name := strings.IndexRune(key, '='); name != -1 {
+			if fingerprint == key[name+1:] {
+				return key[:name], true
+			}
+		} else if fingerprint == key {
+			return "", true
+		}
+	}
+	return "", false
 }
 
 // HandleSecureBootKeyChange will apply the changes necessary when the Secure Boot
